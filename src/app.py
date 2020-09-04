@@ -90,7 +90,7 @@ class Wiki(db.Model):
         path = os.path.join(app.config.get('TMP_DIR'), self.dbname)
         if not os.path.exists(path):
             os.mkdir(path)
-        return path
+        return os.path.abspath(path)
 
     def save_xml(self):
         if os.path.exists(os.path.join(self.path, 'all.xml')):
@@ -105,10 +105,17 @@ class Wiki(db.Model):
         return r.status_code == 200
 
     def clean_xml(self):
-        xml_source = os.path.join(self.path, 'all.xml')
+        xml_source = os.path.abspath(os.path.join(self.path, 'all.xml'))
         cleaner = os.path.join(__dir__, 'IncubatorCleanup', 'cleaner.py')
         p = subprocess.Popen(['python3', cleaner, self.prefix, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.wait()
+        out, err = p.communicate()
+        return (out.decode('utf-8'), err.decode('utf-8'))
+    
+    def split_xml(self):
+        xml_source = 'all.ready.xml'
+        splitter = os.path.join(__dir__, 'IncubatorCleanup', 'splitter.py')
+        p = subprocess.Popen(['python3', splitter, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.path)
         out, err = p.communicate()
         return (out.decode('utf-8'), err.decode('utf-8'))
 
@@ -165,11 +172,21 @@ def wiki_clean(dbname):
         flash(_('clean-failure'))
     return render_template('wiki_clean_done.html', wiki=wiki, out=out, err=err)
 
-@app.route('/wiki/<path:dbname>/split')
+@app.route('/wiki/<path:dbname>/split', methods=['GET', 'POST'])
 def wiki_split(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
-
-    return render_template('wiki_split.html', wiki=wiki)
+    if request.method == 'GET':
+        return render_template('wiki_split.html', wiki=wiki)
+    
+    out, err = wiki.split_xml()
+    if os.path.exists(os.path.join(wiki.path, 'all', 'all_1.xml')):
+        wiki.is_split = True
+        db.session.commit()
+        flash(_('split-success'))
+    else:
+        flash(_('split-failure'))
+    
+    return render_template('wiki_split_done.html', wiki=wiki, out=out, err=err)
 
 @app.route('/wiki/<path:dbname>/import')
 def wiki_import(dbname):
