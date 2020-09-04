@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ _('welcome') }}</h1>
+    <h2>{{ _('list-of-unimported-wikis') }}</h2>
+    <ul>
+        {% for wiki in wikis %}
+        <li><a href="{{ url_for('wiki_action', dbname=wiki.dbname) }}">{{wiki}}</a></li>
+        {% endfor %}
+    </ul>
+
+    <h2>{{ _('new-wiki') }}</h2>
+    <form method="POST" action="{{url_for('new_wiki')}}">
+        <label for="dbname">{{ _('dbname') }}</label>
+        <input class="form-control" type="text" name="dbname" id="dbname">
+
+        <label for="prefix">{{ _('prefix') }}</label>
+        <input type="text" name="prefix" id="prefix" class="form-control">
+        <input class="btn btn-primary btn-success form-control" type="submit" value="{{ _('submit') }}">
+    </form>
+</div>
+{% endblock %}

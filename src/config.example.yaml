@@ -1,0 +1,10 @@
+SECRET_KEY: something
+MESSAGES_DIR: ../messages
+SQLALCHEMY_DATABASE_URI: mysql://root:password@localhost/wiki_importer
+STATIC_URL: /static/
+APPLICATION_ROOT: /
+CONSUMER_KEY: 90db14359d275a8adf51699d7a644d21
+CONSUMER_SECRET: 3f1f1a89041a49c690f98bf0f93b1e5726577e8a
+OAUTH_MWURI: https://meta.wikimedia.org/w
+INCUBATOR_MWURI: https://incubator.wikimedia.org/w
+TMP_DIR: ../data

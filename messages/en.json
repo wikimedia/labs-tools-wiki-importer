@@ -1,0 +1,16 @@
+{
+    "introduction-please-login": "Please, log in",
+    "introduction": "<strong>WikiImporter</strong> is a tool that lets new wiki importers to easily import new wikis from Incubator.",
+    "report-bug": "Report a bug",
+    "login": "Login",
+    "logout": "Logout",
+    "submit": "Submit",
+    "welcome": "Welcome to the tool",
+    "list-of-unimported-wikis": "List of unimported wikis",
+    "dbname": "Database name of the production wiki",
+    "prefix": "Incubator prefix",
+    "split": "Split",
+    "import": "Import",
+    "is-split": "Is splitted",
+    "is-imported": "Is imported"
+}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>{{wiki}}</h1>
+    <ul>
+        <li>{{ _('is-split') }}: {{wiki.is_split}}</li>
+        <li>{{ _('is-imported') }}: {{wiki.is_imported}}</li>
+        <li>{{ _('prefix') }}: {{wiki.prefix}}</li>
+    </ul>
+
+    {% if wiki.is_split %}
+    <a class="btn btn-primary btn-success" href="{{ url_for('wiki_import', dbname=wiki.dbname) }}">{{ _('import') }}</a>
+    {% else %}
+    <a class="btn btn-primary btn-successs" href="{{ url_for('wiki_split', dbname=wiki.dbname) }}">{{ _('split') }}</a>
+    {% endif %}
+</div>
+{% endblock %}
