@@ -16,7 +16,9 @@
     "is-imported": "Is imported",
     "split-success": "Wiki was successfully splitted.",
     "clean-success": "Wiki was successfully cleaned.",
+    "clean-failure": "Cleaning the wiki failed",
     "clean": "Clean",
     "std-out": "STDOUT",
-    "std-err": "STDERR"
+    "std-err": "STDERR",
+    "go-back": "Go back"
 }

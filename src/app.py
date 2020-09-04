@@ -94,7 +94,7 @@ class Wiki(db.Model):
 
     def save_xml(self):
         if os.path.exists(os.path.join(self.path, 'all.xml')):
-            return
+            return True
         pages = self.get_pages()
         url = app.config.get('INCUBATOR_MWURI') + '/index.php'
         r = requests.post(url, data={
@@ -157,12 +157,18 @@ def wiki_clean(dbname):
         return render_template('wiki_clean_error_save.html', wiki=wiki)
     
     out, err = wiki.clean_xml()
-    flash(_('clean-success'))
+    if os.path.exists(os.path.join(wiki.path, 'all.ready.xml')):
+        wiki.is_clean = True
+        db.session.commit()
+        flash(_('clean-success'))
+    else:
+        flash(_('clean-failure'))
     return render_template('wiki_clean_done.html', wiki=wiki, out=out, err=err)
 
 @app.route('/wiki/<path:dbname>/split')
 def wiki_split(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
+
     return render_template('wiki_split.html', wiki=wiki)
 
 @app.route('/wiki/<path:dbname>/import')

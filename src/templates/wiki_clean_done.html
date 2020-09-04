@@ -16,7 +16,11 @@
             {{err}}
         </tt>
 
+        {% if wiki.is_clean %}
         <input class="btn btn-primary btn-success form-control" type="submit" value="{{ _('split') }}">
+        {% else %}
+        <a class="btn btn-primary btn-danger form-control" href="{{ url_for('wiki_action', dbname=wiki.dbname) }}">{{ _('go-back') }}</a>
+        {% endif %}
     </form>
 </div>
 {% endblock %}
