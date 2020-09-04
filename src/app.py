@@ -20,6 +20,7 @@ from flask import redirect, request, jsonify, render_template, url_for, \
     make_response, flash
 from flask import Flask
 import requests
+import subprocess
 from flask_jsonlocale import Locales
 from flask_mwoauth import MWOAuth
 from flask_sqlalchemy import SQLAlchemy
@@ -82,12 +83,16 @@ class Wiki(db.Model):
             else:
                 break
         return res
-
-    def save_xml(self):
+    
+    @property
+    def path(self):
         path = os.path.join(app.config.get('TMP_DIR'), self.dbname)
         if not os.path.exists(path):
-            os.mkdir(os.path.join(app.config.get('TMP_DIR'), self.dbname))
-        if os.path.exists(os.path.join(path, 'all.xml')):
+            os.mkdir(path)
+        return path
+
+    def save_xml(self):
+        if os.path.exists(os.path.join(self.path, 'all.xml')):
             return
         pages = self.get_pages()
         url = app.config.get('INCUBATOR_MWURI') + '/index.php'
@@ -95,8 +100,14 @@ class Wiki(db.Model):
             "title": 'Special:Export',
             "pages": "\n".join(pages)
         })
-        open(os.path.join(path, 'all.xml'), 'wb').write(r.content)
+        open(os.path.join(self.path, 'all.xml'), 'wb').write(r.content)
         return r.status_code == 200
+
+    def clean_xml(self):
+        xml_source = os.path.join(self.path, 'all.xml')
+        cleaner = os.path.join(__dir__, 'IncubatorCleanup', 'cleaner.py')
+        p = subprocess.Popen(['python3', cleaner, xml_source])
+        p.wait()
 
 def logged():
     return mwoauth.get_current_user() is not None
