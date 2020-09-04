@@ -11,7 +11,12 @@
     "prefix": "Incubator prefix",
     "split": "Split",
     "import": "Import",
+    "is-clean": "Is clean",
     "is-split": "Is splitted",
     "is-imported": "Is imported",
-    "split-success": "Wiki was successfully splitted."
+    "split-success": "Wiki was successfully splitted.",
+    "clean-success": "Wiki was successfully cleaned.",
+    "clean": "Clean",
+    "std-out": "STDOUT",
+    "std-err": "STDERR"
 }

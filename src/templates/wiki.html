@@ -4,15 +4,20 @@
 <div class="container">
     <h1>{{wiki}}</h1>
     <ul>
+        <li>{{ _('is-clean') }}: {{wiki.is_clean}}</li>
         <li>{{ _('is-split') }}: {{wiki.is_split}}</li>
         <li>{{ _('is-imported') }}: {{wiki.is_imported}}</li>
         <li>{{ _('prefix') }}: {{wiki.prefix}}</li>
     </ul>
 
-    {% if wiki.is_split %}
-    <a class="btn btn-primary btn-success" href="{{ url_for('wiki_import', dbname=wiki.dbname) }}">{{ _('import') }}</a>
-    {% else %}
+    {% if wiki.is_clean %}
     <a class="btn btn-primary btn-successs" href="{{ url_for('wiki_split', dbname=wiki.dbname) }}">{{ _('split') }}</a>
+    {% else %}
+    <a class="btn btn-primary btn-successs" href="{{ url_for('wiki_clean', dbname=wiki.dbname) }}">{{ _('clean') }}</a>
+    {% if wiki.is_split %}
+    { % else %}
+    <a class="btn btn-primary btn-success" href="{{ url_for('wiki_import', dbname=wiki.dbname) }}">{{ _('import') }}</a>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

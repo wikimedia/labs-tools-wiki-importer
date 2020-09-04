@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ _('split') }}: {{wiki}}</h1>
+    <form method="post" action="">
+        <p>This wiki was cleaned. Please review the output:</p>
+
+        <h2>{{ _('std-out') }}</h2>
+        <tt>
+            {{out}}
+        </tt>
+
+        <h2>{{ _('std-err') }}</h2>
+        <tt>
+            {{err}}
+        </tt>
+
+        <input class="btn btn-primary btn-success form-control" type="submit" value="{{ _('split') }}">
+    </form>
+</div>
+{% endblock %}

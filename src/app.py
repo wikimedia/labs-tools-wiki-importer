@@ -56,6 +56,7 @@ class Wiki(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     dbname = db.Column(db.String(255))
     prefix = db.Column(db.String(255))
+    is_clean = db.Column(db.Boolean, default=False)
     is_split = db.Column(db.Boolean, default=False)
     is_imported = db.Column(db.Boolean, default=False)
 
@@ -108,6 +109,7 @@ class Wiki(db.Model):
         cleaner = os.path.join(__dir__, 'IncubatorCleanup', 'cleaner.py')
         p = subprocess.Popen(['python3', cleaner, xml_source])
         p.wait()
+        return p.communicate()
 
 def logged():
     return mwoauth.get_current_user() is not None
@@ -143,23 +145,29 @@ def wiki_action(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki.html', wiki=wiki)
 
+@app.route('/wiki/<path:dbname>/clean', methods=['GET', 'POST'])
+def wiki_clean(dbname):
+    wiki = Wiki.query.filter_by(dbname=dbname)[0]
+    if request.method == 'GET':
+        return render_template('wiki_clean.html', wiki=wiki)
+    
+    tmp = wiki.save_xml()
+    if not tmp:
+        return render_template('wiki_clean_error_save.html', wiki=wiki)
+    
+    out, err = wiki.clean_xml()
+    flash(_('clean-success'))
+    return render_template('wiki_clean_done.html', wiki=wiki, out=out, err=err)
+
+@app.route('/wiki/<path:dbname>/split')
+def wiki_split(dbname):
+    wiki = Wiki.query.filter_by(dbname=dbname)[0]
+    return render_template('wiki_split.html', wiki=wiki)
+
 @app.route('/wiki/<path:dbname>/import')
 def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki_import.html', wiki=wiki)
-
-@app.route('/wiki/<path:dbname>/split', methods=['GET', 'POST'])
-def wiki_split(dbname):
-    wiki = Wiki.query.filter_by(dbname=dbname)[0]
-    if request.method == 'GET':
-        return render_template('wiki_split.html', wiki=wiki)
-    
-    tmp = wiki.save_xml()
-    if not tmp:
-        return render_template('wiki_split_error_save.html', wiki=wiki)
-    
-    flash(_('split-success'))
-    return redirect(url_for('wiki_action', dbname=dbname))
 
 @app.route('/test')
 def test():

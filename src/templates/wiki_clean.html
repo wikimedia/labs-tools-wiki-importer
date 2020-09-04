@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ _('clean') }}: {{wiki}}</h1>
+    <form method="post">
+        <p>This will download the wiki from Incubator and clean the XML file. This can take several minutes.</p>
+        <input class="btn btn-primary btn-success form-control" type="submit" value="{{ _('clean') }}">
+    </form>
+</div>
+{% endblock %}
