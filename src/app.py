@@ -87,6 +87,8 @@ class Wiki(db.Model):
         path = os.path.join(app.config.get('TMP_DIR'), self.dbname)
         if not os.path.exists(path):
             os.mkdir(os.path.join(app.config.get('TMP_DIR'), self.dbname))
+        if os.path.exists(os.path.join(path, 'all.xml')):
+            return
         pages = self.get_pages()[:2]
         url = app.config.get('INCUBATOR_MWURI') + '/index.php'
         r = requests.post(url, data={
