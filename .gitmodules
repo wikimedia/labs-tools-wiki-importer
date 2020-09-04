@@ -1,0 +1,3 @@
+[submodule "src/IncubatorCleanup"]
+	path = src/IncubatorCleanup
+	url = https://github.com/jhsoby/IncubatorCleanup.git
