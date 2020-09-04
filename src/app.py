@@ -83,7 +83,7 @@ class Wiki(db.Model):
                     payload[param] = data['continue'].get(param)
             else:
                 break
-        return res[:10]
+        return res
     
     @property
     def path(self):
