@@ -12,5 +12,6 @@
     "split": "Split",
     "import": "Import",
     "is-split": "Is splitted",
-    "is-imported": "Is imported"
+    "is-imported": "Is imported",
+    "split-success": "Wiki was successfully splitted."
 }

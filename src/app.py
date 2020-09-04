@@ -17,7 +17,7 @@
 import os
 import yaml
 from flask import redirect, request, jsonify, render_template, url_for, \
-    make_response
+    make_response, flash
 from flask import Flask
 import requests
 from flask_jsonlocale import Locales
@@ -138,7 +138,15 @@ def wiki_import(dbname):
 @app.route('/wiki/<path:dbname>/split', methods=['GET', 'POST'])
 def wiki_split(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
-    return render_template('wiki_split.html', wiki=wiki)
+    if request.method == 'GET':
+        return render_template('wiki_split.html', wiki=wiki)
+    
+    tmp = wiki.save_xml()
+    if not tmp:
+        return render_template('wiki_split_error_save.html', wiki=wiki)
+    
+    flash(_('split-success'))
+    return redirect(url_for('wiki_action', dbname=dbname))
 
 @app.route('/test')
 def test():
