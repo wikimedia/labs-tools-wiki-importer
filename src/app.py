@@ -107,9 +107,10 @@ class Wiki(db.Model):
     def clean_xml(self):
         xml_source = os.path.join(self.path, 'all.xml')
         cleaner = os.path.join(__dir__, 'IncubatorCleanup', 'cleaner.py')
-        p = subprocess.Popen(['python3', cleaner, xml_source])
+        p = subprocess.Popen(['python3', cleaner, self.prefix, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.wait()
-        return p.communicate()
+        out, err = p.communicate()
+        return (out.decode('utf-8'), err.decode('utf-8'))
 
 def logged():
     return mwoauth.get_current_user() is not None
