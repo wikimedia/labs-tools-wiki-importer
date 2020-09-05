@@ -58,8 +58,8 @@ app.register_blueprint(mwoauth.bp)
 def make_celery():
     celery = Celery(
         app.import_name,
-        backend=app.config.get('REDIS_URI'),
-        broker=app.config.get('REDIS_URI')
+        backend=app.config.get('CELERY_RESULT_BACKEND'),
+        broker=app.config.get('CELERY_BROKER_URL')
     )
     celery.conf.update(app.config)
 
@@ -229,10 +229,16 @@ def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki_import.html', wiki=wiki)
 
+@celery.task(name='blah')
+def test_task(a, b):
+    return a + b
+
 @app.route('/test')
 def test():
-    wiki = Wiki.query.filter_by(dbname='jawikivoyage')[0]
-    return jsonify(wiki.save_xml())
+    task = test_task.delay(23, 42)
+    return jsonify({
+        'back': task.wait()
+    })
 
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)
