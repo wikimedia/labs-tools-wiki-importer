@@ -4,7 +4,12 @@
 <div class="container">
     <h1>{{wiki}}</h1>
     <ul>
-        <li>{{ _('is-clean') }}: {{wiki.is_clean}}</li>
+        <li>
+            {{ _('is-clean') }}: {{wiki.is_clean}}
+            {% if wiki.is_clean %}
+            (<a href="{{ url_for('wiki_clean', dbname=wiki.dbname) }}">{{ _('details') }}</a>)
+            {% endif %}
+        </li>
         <li>{{ _('is-split') }}: {{wiki.is_split}}</li>
         <li>{{ _('is-imported') }}: {{wiki.is_imported}}</li>
         <li>{{ _('prefix') }}: {{wiki.prefix}}</li>

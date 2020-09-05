@@ -80,6 +80,8 @@ class Wiki(db.Model):
     dbname = db.Column(db.String(255))
     prefix = db.Column(db.String(255))
     is_clean = db.Column(db.Boolean, default=False)
+    clean_std_out = db.Column(db.Text)
+    clean_std_err = db.Column(db.Text)
     is_split = db.Column(db.Boolean, default=False)
     is_imported = db.Column(db.Boolean, default=False)
 
@@ -133,6 +135,13 @@ class Wiki(db.Model):
         p = subprocess.Popen(['python3', cleaner, self.prefix, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.wait()
         out, err = p.communicate()
+
+        if os.path.exists(os.path.join(self.path, 'all.ready.xml')):
+            self.is_clean = True
+            self.clean_std_out = out.decode('utf-8')
+            self.clean_std_err = err.decode('utf-8')
+            db.session.commit()
+
         return (out.decode('utf-8'), err.decode('utf-8'))
     
     def split_xml(self):
@@ -191,24 +200,29 @@ def wiki_action(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki.html', wiki=wiki)
 
+@celery.task(name='wiki_clean')
+def task_wiki_clean(dbname):
+    wiki = Wiki.query.filter_by(dbname=dbname)[0]
+    return wiki.clean_xml()
+
 @app.route('/wiki/<path:dbname>/clean', methods=['GET', 'POST'])
 def wiki_clean(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     if request.method == 'GET':
-        return render_template('wiki_clean.html', wiki=wiki)
+        if not wiki.is_clean:
+            return render_template('wiki_clean.html', wiki=wiki)
+    
+    if wiki.is_clean:
+        return render_template('wiki_clean_done.html', wiki=wiki, out=wiki.clean_std_out, err=wiki.clean_std_err)
     
     tmp = wiki.save_xml()
     if not tmp:
         return render_template('wiki_clean_error_save.html', wiki=wiki)
     
-    out, err = wiki.clean_xml()
-    if os.path.exists(os.path.join(wiki.path, 'all.ready.xml')):
-        wiki.is_clean = True
-        db.session.commit()
-        flash(_('clean-success'))
-    else:
-        flash(_('clean-failure'))
-    return render_template('wiki_clean_done.html', wiki=wiki, out=out, err=err)
+    task = task_wiki_clean.delay(dbname)
+    
+    flash(_('clean-scheduled'))
+    return render_template('wiki_clean_scheduled.html', wiki=wiki)
 
 @app.route('/wiki/<path:dbname>/split', methods=['GET', 'POST'])
 def wiki_split(dbname):
