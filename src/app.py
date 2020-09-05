@@ -31,6 +31,8 @@ app = Flask(__name__, static_folder='../static')
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+ALLOWED_GROUPS = ['new-wiki-importer', 'steward']
+
 # Load configuration from YAML file
 __dir__ = os.path.dirname(__file__)
 app.config.update(
@@ -130,10 +132,25 @@ def inject_base_variables():
     }
 
 @app.before_request
-def permissions():
+def ensure_login():
     if request.path != '/login' and request.path != '/oauth-callback':
         if not logged():
             return render_template('login.html')
+
+@app.before_request
+def ensure_privileges():
+    if logged():
+        data = mwoauth.request({
+            "action": "query",
+            "format": "json",
+            "meta": "globaluserinfo",
+            "guiprop": "groups"
+        })
+        groups = data.get('query', {}).get('globaluserinfo', {}).get('groups')
+        for group in ALLOWED_GROUPS:
+            if group in groups:
+                return
+        return render_template('permission_denied.html')
 
 @app.route('/')
 def index():
