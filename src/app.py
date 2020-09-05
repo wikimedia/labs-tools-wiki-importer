@@ -231,16 +231,5 @@ def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki_import.html', wiki=wiki)
 
-@celery.task(name='blah')
-def test_task(a, b):
-    return a + b
-
-@app.route('/test')
-def test():
-    task = test_task.delay(23, 42)
-    return jsonify({
-        'back': task.wait()
-    })
-
 if __name__ == "__main__":
     app.run(debug=True, threaded=True)
