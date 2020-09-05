@@ -64,6 +64,8 @@ def make_celery():
     celery.conf.update(app.config)
 
     class ContextTask(celery.Task):
+        queue = 'urbanecm_wiki_importer'
+
         def __call__(self, *args, **kwargs):
             with app.app_context():
                 return self.run(*args, **kwargs)
