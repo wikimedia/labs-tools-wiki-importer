@@ -7,7 +7,7 @@ DEPLOYMENT=wiki-importer.celery-worker
 POD_NAME=wiki-importer.celery-worker
 
 TOOL_DIR=$(cd $(dirname $0)/.. && pwd -P)
-VENV=${TOOL_DIR}/venv-k8s-py37
+VENV=${TOOL_DIR}/venv-bastion
 if [[ -f ${VENV}/bin/activate ]]; then
     # Enable virtualenv
     source ${VENV}/bin/activate
