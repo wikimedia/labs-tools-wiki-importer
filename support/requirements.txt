@@ -11,3 +11,4 @@ Flask-SQLAlchemy
 SQLAlchemy-Utils
 Flask-Migrate
 mysqlclient
+celery
