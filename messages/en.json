@@ -25,5 +25,6 @@
     "clean": "Clean",
     "std-out": "STDOUT",
     "std-err": "STDERR",
-    "go-back": "Go back"
+    "go-back": "Go back",
+    "new-wiki": "Add a new wiki to the database"
 }
