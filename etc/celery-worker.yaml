@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wiki-importer.celery_worker
+  name: wiki-importer.celery-worker
   namespace: tool-wiki-importer
   labels:
-    name: wiki-importer.celery_worker
+    name: wiki-importer.celery-worker
     # The toolforge=tool label will cause $HOME and other paths to be mounted from Toolforge
     toolforge: tool
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: wiki-importer.celery_worker
+      name: wiki-importer.celery-worker
       toolforge: tool
   template:
     metadata:
       labels:
-        name: wiki-importer.celery_worker
+        name: wiki-importer.celery-worker
         toolforge: tool
     spec:
       containers:
-        - name: bot
+        - name: celery-worker
           image: docker-registry.tools.wmflabs.org/toolforge-python37-sssd-base:latest
-          command: [ "/data/project/wiki-importer/bin/celery_worker.sh" ]
+          command: [ "/data/project/wiki-importer/bin/celery-worker.sh" ]
           workingDir: /data/project/wiki-importer
           env:
             - name: HOME
