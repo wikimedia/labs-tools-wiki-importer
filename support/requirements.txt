@@ -12,3 +12,4 @@ SQLAlchemy-Utils
 Flask-Migrate
 mysqlclient
 celery
+redis
