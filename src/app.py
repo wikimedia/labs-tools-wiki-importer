@@ -25,6 +25,7 @@ from flask_jsonlocale import Locales
 from flask_mwoauth import MWOAuth
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from celery import Celery
 
 app = Flask(__name__, static_folder='../static')
 
@@ -53,6 +54,24 @@ mwoauth = MWOAuth(
     return_json=True
 )
 app.register_blueprint(mwoauth.bp)
+
+def make_celery():
+    celery = Celery(
+        app.import_name,
+        backend=app.config.get('REDIS_URI'),
+        broker=app.config.get('REDIS_URI')
+    )
+    celery.conf.update(app.config)
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+    return celery
+
+celery = make_celery()
 
 class Wiki(db.Model):
     id = db.Column(db.Integer, primary_key=True)
