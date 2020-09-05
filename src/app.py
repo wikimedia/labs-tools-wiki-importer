@@ -83,6 +83,8 @@ class Wiki(db.Model):
     clean_std_out = db.Column(db.Text)
     clean_std_err = db.Column(db.Text)
     is_split = db.Column(db.Boolean, default=False)
+    split_std_out = db.Column(db.Text)
+    split_std_err = db.Column(db.Text)
     is_imported = db.Column(db.Boolean, default=False)
 
     def __str__(self):
@@ -150,6 +152,12 @@ class Wiki(db.Model):
         splitter = os.path.join(__dir__, 'IncubatorCleanup', 'splitter.py')
         p = subprocess.Popen(['python3', splitter, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.path)
         out, err = p.communicate()
+
+        if os.path.exists(os.path.join(self.path, 'all', 'all_1.xml')):
+            self.is_split = True
+
+        self.split_std_out = out.decode('utf-8')
+        self.split_std_err = err.decode('utf-8')
         return (out.decode('utf-8'), err.decode('utf-8'))
 
 def logged():
@@ -225,21 +233,25 @@ def wiki_clean(dbname):
     flash(_('clean-scheduled'))
     return render_template('wiki_clean_scheduled.html', wiki=wiki)
 
+@celery.task(name='wiki_split')
+def task_wiki_split(dbname):
+    wiki = Wiki.query.filter_by(dbname=dbname)[0]
+    return wiki.split_xml()
+
 @app.route('/wiki/<path:dbname>/split', methods=['GET', 'POST'])
 def wiki_split(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     if request.method == 'GET':
-        return render_template('wiki_split.html', wiki=wiki)
+        if not wiki.is_split:
+            return render_template('wiki_split.html', wiki=wiki)
     
-    out, err = wiki.split_xml()
-    if os.path.exists(os.path.join(wiki.path, 'all', 'all_1.xml')):
-        wiki.is_split = True
-        db.session.commit()
-        flash(_('split-success'))
-    else:
-        flash(_('split-failure'))
-    
-    return render_template('wiki_split_done.html', wiki=wiki, out=out, err=err)
+    if wiki.is_split:
+        return render_template('wiki_split_done.html', wiki=wiki, out=wiki.split_std_out, err=wiki.split_std_err)
+
+    task = task_wiki_split.delay(dbname)
+
+    flash(_('split-scheduled'))
+    return render_template('wiki_split_scheduled.html', wiki=wiki)
 
 @app.route('/wiki/<path:dbname>/import')
 def wiki_import(dbname):
