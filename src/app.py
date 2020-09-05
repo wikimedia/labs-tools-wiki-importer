@@ -138,9 +138,10 @@ class Wiki(db.Model):
 
         if os.path.exists(os.path.join(self.path, 'all.ready.xml')):
             self.is_clean = True
-            self.clean_std_out = out.decode('utf-8')
-            self.clean_std_err = err.decode('utf-8')
-            db.session.commit()
+
+        self.clean_std_out = out.decode('utf-8')
+        self.clean_std_err = err.decode('utf-8')
+        db.session.commit()
 
         return (out.decode('utf-8'), err.decode('utf-8'))
     
