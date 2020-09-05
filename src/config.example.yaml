@@ -8,3 +8,4 @@ CONSUMER_SECRET: 3f1f1a89041a49c690f98bf0f93b1e5726577e8a
 OAUTH_MWURI: https://meta.wikimedia.org/w
 INCUBATOR_MWURI: https://incubator.wikimedia.org/w
 TMP_DIR: ../data
+REDIS_URI: redis://localhost:6379
