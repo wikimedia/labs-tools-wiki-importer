@@ -3,24 +3,22 @@
 {% block content %}
 <div class="container">
     <h1>{{ _('split') }}: {{wiki}}</h1>
-    <form method="post" action="{{ url_for('wiki_split', dbname=wiki.dbname) }}">
-        <p>This wiki was cleaned. Please review the output:</p>
+    <p>This wiki was cleaned. Please review the output:</p>
 
-        <h2>{{ _('std-out') }}</h2>
-        <tt>
-            {{out}}
-        </tt>
+    <h2>{{ _('std-out') }}</h2>
+    <tt>
+        {{out}}
+    </tt>
 
-        <h2>{{ _('std-err') }}</h2>
-        <tt>
-            {{err}}
-        </tt>
+    <h2>{{ _('std-err') }}</h2>
+    <tt>
+        {{err}}
+    </tt>
 
-        {% if wiki.is_clean %}
-        <input class="btn btn-primary btn-success form-control" type="submit" value="{{ _('split') }}">
-        {% else %}
-        <a class="btn btn-primary btn-danger form-control" href="{{ url_for('wiki_action', dbname=wiki.dbname) }}">{{ _('go-back') }}</a>
-        {% endif %}
-    </form>
+    {% if wiki.is_clean %}
+    <a class="btn btn-primary btn-success form-control" href="{{ url_for('wiki_split', dbname=wiki.dbname) }}">{{ _('split') }}</a>
+    {% else %}
+    <a class="btn btn-primary btn-danger form-control" href="{{ url_for('wiki_action', dbname=wiki.dbname) }}">{{ _('go-back') }}</a>
+    {% endif %}
 </div>
 {% endblock %}
