@@ -32,7 +32,7 @@ app = Flask(__name__, static_folder='../static')
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-ALLOWED_GROUPS = ['new-wiki-importer', 'steward']
+ALLOWED_GROUPS = ['new-wikis-importer', 'steward']
 
 # Load configuration from YAML file
 __dir__ = os.path.dirname(__file__)
