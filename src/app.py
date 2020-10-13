@@ -121,13 +121,30 @@ class Wiki(db.Model):
             else:
                 break
         return res
-    
+
     @property
     def path(self):
-        path = os.path.join(app.config.get('TMP_DIR'), self.dbname)
+        path = self.raw_path
         if not os.path.exists(path):
             os.mkdir(path)
         return os.path.abspath(path)
+
+    @property
+    def raw_path(self):
+        return os.path.join(app.config.get('TMP_DIR'), self.dbname)
+
+    def reset(self):
+        if os.path.exists(self.raw_path):
+            shutil.rmtree(self.raw_path)
+
+        self.is_clean = False
+        self.clean_std_err = ""
+        self.clean_std_out = ""
+        self.is_split = False
+        self.split_std_err = ""
+        self.split_std_out = ""
+        self.is_imported = False
+        db.session.commit()
 
     def save_xml(self):
         if os.path.exists(os.path.join(self.path, 'all.xml')):
@@ -270,6 +287,31 @@ def wiki_action(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki.html', wiki=wiki)
 
+@app.route('/wiki/<path:dbname>/change-xml', methods=['POST'])
+def wiki_change_xml(dbname):
+    wiki = Wiki.query.filter_by(dbname=dbname)[0]
+    wiki.reset()
+
+    if 'new-xml' in request.files:
+        f = request.files['new-xml']
+        if f.filename == '':
+            wiki.save_xml()
+            flash(_('wiki-xml-changed'))
+            return redirect(url_for('wiki_action', dbname=dbname))
+
+        if f.filename.rsplit('.', 1)[1].lower() != 'xml':
+            flash(_('wiki-xml-invalid'), 'error')
+            return redirect(url_for('wiki_action', dbname=dbname))
+
+        f.save(os.path.join(wiki.path, 'all.xml'))
+    else:
+        wiki.save_xml()
+        flash(_('wiki-xml-changed'))
+        return redirect(url_for('wiki_action', dbname=dbname))
+
+    flash(_('wiki-xml-changed'))
+    return redirect(url_for('wiki_action', dbname=dbname))
+
 @celery.task(name='wiki_clean')
 def task_wiki_clean(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
@@ -285,9 +327,10 @@ def wiki_clean(dbname):
     if wiki.is_clean:
         return render_template('wiki_clean_done.html', wiki=wiki, out=wiki.clean_std_out, err=wiki.clean_std_err)
     
-    tmp = wiki.save_xml()
-    if not tmp:
-        return render_template('wiki_clean_error_save.html', wiki=wiki)
+    if not os.path.exists(os.path.join(wiki.path, 'all.xml')):
+        tmp = wiki.save_xml()
+        if not tmp:
+            return render_template('wiki_clean_error_save.html', wiki=wiki)
     
     task = task_wiki_clean.delay(dbname)
     

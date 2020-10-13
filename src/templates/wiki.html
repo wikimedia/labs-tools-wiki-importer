@@ -25,5 +25,15 @@
     {% endif %}
     {% endif %}
 
+    <h2>{{ _('change-xml') }}</h2>
+    <p>
+        {{ _('change-xml-description') }}
+    </p>
+
+    <form action="{{ url_for('wiki_change_xml', dbname=wiki.dbname) }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="new-xml" id="new-xml">
+        <button class="btn btn-secondary btn-success form-control" type="submit">{{ _('submit') }}</button>
+    </form>
+
 </div>
 {% endblock %}

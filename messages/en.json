@@ -26,5 +26,9 @@
     "std-out": "STDOUT",
     "std-err": "STDERR",
     "go-back": "Go back",
-    "new-wiki": "Add a new wiki to the database"
+    "new-wiki": "Add a new wiki to the database",
+    "change-xml": "Change XML",
+    "change-xml-description": "This allows you to change the raw XML file used for cleaner process. Using this deletes all wiki data and restarts the process.",
+    "wiki-xml-changed": "XML was successfully changed.",
+    "wiki-xml-invalid": "Invalid XML passed"
 }
