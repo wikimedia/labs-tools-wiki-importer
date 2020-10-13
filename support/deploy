@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+cd ~/wiki-importer/src
+git pull
+flask db upgrade
+bash ~/bin/wiki-importer.sh restart
+webservice --backend=kubernetes python restart
