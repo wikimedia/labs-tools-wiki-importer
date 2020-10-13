@@ -2,8 +2,8 @@
 
 set -e
 
-cd ~/wiki-importer/src
+cd ~/src
 git pull
 flask db upgrade
-bash ~/bin/wiki-importer.sh restart
+bash ~/bin/wiki-importer.sh restart || true
 webservice --backend=kubernetes python restart
