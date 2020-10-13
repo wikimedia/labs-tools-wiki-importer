@@ -16,7 +16,7 @@
     "is-split": "Is splitted",
     "is-imported": "Is imported",
     "clean-scheduled": "Cleaning of wiki XML was successfully scheduled.",
-    "clean-scheduled-long": "Cleaning of wiki XML was successfully scheduled. Once it is ready, the split button will be available in the wiki main page.",
+    "clean-scheduled-long": "Cleaning of wiki XML was successfully scheduled. Once it is ready, the split button will be available in the wiki main page. You can watch the process by refreshing this page.",
     "split-scheduled": "Splitting of wiki XML was successfully scheduled.",
     "split-scheduled-long": "Splitting of wiki XML was successfully scheduled. Once it is ready, the import button will be available in the wiki main page.",
     "clean-success": "Wiki was successfully cleaned.",

@@ -90,12 +90,15 @@ class Wiki(db.Model):
     dbname = db.Column(db.String(255))
     prefix = db.Column(db.String(255))
     is_clean = db.Column(db.Boolean, default=False)
+    clean_started = db.Column(db.Boolean, default=False)
     clean_std_out = db.Column(db.Text)
     clean_std_err = db.Column(db.Text)
     is_split = db.Column(db.Boolean, default=False)
+    split_started = db.Column(db.Boolean, default=False)
     split_std_out = db.Column(db.Text)
     split_std_err = db.Column(db.Text)
     is_imported = db.Column(db.Boolean, default=False)
+    import_started = db.Column(db.Boolean, default=False)
 
     def __str__(self):
         return self.dbname
@@ -138,12 +141,15 @@ class Wiki(db.Model):
             shutil.rmtree(self.raw_path)
 
         self.is_clean = False
+        self.clean_started = False
         self.clean_std_err = ""
         self.clean_std_out = ""
         self.is_split = False
+        self.split_started = False
         self.split_std_err = ""
         self.split_std_out = ""
         self.is_imported = False
+        self.import_started = False
         db.session.commit()
 
     def save_xml(self):
@@ -327,12 +333,17 @@ def wiki_clean(dbname):
     if wiki.is_clean:
         return render_template('wiki_clean_done.html', wiki=wiki, out=wiki.clean_std_out, err=wiki.clean_std_err)
     
+    if wiki.clean_started:
+        return render_template('wiki_clean_scheduled.html', wiki=wiki, in_progress=True)
+    
     if not os.path.exists(os.path.join(wiki.path, 'all.xml')):
         tmp = wiki.save_xml()
         if not tmp:
             return render_template('wiki_clean_error_save.html', wiki=wiki)
     
     task = task_wiki_clean.delay(dbname)
+    wiki.clean_started = True
+    db.session.commit()
     
     flash(_('clean-scheduled'))
     return render_template('wiki_clean_scheduled.html', wiki=wiki)
@@ -348,11 +359,16 @@ def wiki_split(dbname):
     if request.method == 'GET':
         if not wiki.is_split:
             return render_template('wiki_split.html', wiki=wiki)
-    
+
     if wiki.is_split:
         return render_template('wiki_split_done.html', wiki=wiki, out=wiki.split_std_out, err=wiki.split_std_err)
+    
+    if wiki.split_started:
+        return render_template('wiki_split_scheduled.html', wiki=wiki, in_progress=True)
 
     task = task_wiki_split.delay(dbname)
+    wiki.split_started = True
+    db.session.commit()
 
     flash(_('split-scheduled'))
     return render_template('wiki_split_scheduled.html', wiki=wiki)

@@ -6,6 +6,11 @@
     <p>
         {{ _('clean-scheduled-long') }}
     </p>
+    {% if in_progress %}
+    <p>
+        The process is still running...
+    </p>
+    {% endif %}
     <p>
         You can also see wiki data live <a href="https://tools-static.wmflabs.org/wiki-importer/data/{{wiki.dbname}}">here</a>.
     </p>
