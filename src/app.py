@@ -231,6 +231,9 @@ def db_init_user():
 
 @app.before_request
 def ensure_privileges():
+    if request.path == '/login' or request.path == '/oauth-callback' or request.path == '/logout':
+        return
+
     if logged():
         data = mwoauth.request({
             "action": "query",
