@@ -27,6 +27,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from celery import Celery
 from requests_oauthlib import OAuth1
+import shutil
 
 app = Flask(__name__, static_folder='../static')
 
@@ -158,6 +159,9 @@ class Wiki(db.Model):
     
     def split_xml(self):
         xml_source = 'all.ready.xml'
+        if os.path.exists(os.path.join(self.path, 'all')):
+            shutil.rmtree(os.path.join(self.path, 'all'))
+
         splitter = os.path.join(__dir__, 'IncubatorCleanup', 'splitter.py')
         p = subprocess.Popen(['python3', splitter, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.path)
         out, err = p.communicate()
@@ -167,6 +171,7 @@ class Wiki(db.Model):
 
         self.split_std_out = out.decode('utf-8')
         self.split_std_err = err.decode('utf-8')
+        db.session.commit()
         return (out.decode('utf-8'), err.decode('utf-8'))
 
 def logged():
