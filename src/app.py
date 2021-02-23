@@ -164,7 +164,7 @@ class Wiki(db.Model):
             r = mw_request({
                 "action": "import",
                 "token": get_token('csrf', self.api_url, user),
-                "assignknownusers": False,
+                "assignknownusers": True,
                 "interwikiprefix": 'incubator:',
                 "summary": "[TEST] importing %s via a tool" % self.dbname
             }, self.api_url, user, {
