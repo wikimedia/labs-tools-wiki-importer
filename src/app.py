@@ -159,6 +159,38 @@ class Wiki(db.Model):
         f.close()
         return path
 
+    def import_pages(pages):
+        for page_raw in pages:
+            page = page_raw.replace('%s/' % wiki.prefix, '')
+
+            file_path = wiki.get_singlepage_xml_from_incubator(page)
+            r = mw_request({
+                "action": "import",
+                "token": get_token('csrf', wiki.api_url),
+                "assignknownusers": False,
+                "interwikiprefix": 'incubator',
+                "summary": "[TEST] importing %s via a tool" % dbname
+            }, wiki.api_url, None, {
+                'xml': (
+                    'file.xml',
+                    open(file_path)
+                )
+            })
+            resp = r.json()
+            import_success = 'error' not in resp
+            page_obj = Page(
+                wiki_id=wiki.id,
+                page_title=page,
+                imported_successfully=import_success,
+                error_message=None
+            )
+            if not import_success:
+                page_obj.error_message = json.dumps(resp)
+            
+            db.session.add(page_obj)
+            db.session.commit()
+            break
+
     @property
     def path(self):
         path = self.raw_path
@@ -287,43 +319,29 @@ def wiki_action(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki.html', wiki=wiki)
 
+@celery.task(name='wiki_import_namespace')
+def task_wiki_import_namespace(dbname, namespace):
+    wiki = Wiki.query.filter_by(dbname=dbname).first()
+    wiki.import_pages(
+        wiki.get_pages(namespace)
+    )
+
+@celery.task(name='wiki_import_noncolon')
+def task_wiki_import_noncolon(dbname):
+    wiki = Wiki.query.filter_by(dbname=dbname).first()
+    wiki.import_pages(
+        wiki.get_noncolon_pages()
+    )
+
 @app.route('/wiki/<path:dbname>/import', methods=['POST'])
 def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
 
-    pages = wiki.get_noncolon_pages()
-
-    for page_raw in pages:
-        page = page_raw.replace('%s/' % wiki.prefix, '')
-
-        file_path = wiki.get_singlepage_xml_from_incubator(page)
-        r = mw_request({
-            "action": "import",
-            "token": get_token('csrf', wiki.api_url),
-            "assignknownusers": False,
-            "interwikiprefix": 'incubator',
-            "summary": "[TEST] importing %s via a tool" % dbname
-        }, wiki.api_url, None, {
-            'xml': (
-                'file.xml',
-                open(file_path)
-            )
-        })
-        resp = r.json()
-        import_success = 'error' not in resp
-        page_obj = Page(
-            wiki_id=wiki.id,
-            page_title=page,
-            imported_successfully=import_success,
-            error_message=None
-        )
-        if not import_success:
-            page_obj.error_message = json.dumps(resp)
-        
-        db.session.add(page_obj)
-        db.session.commit()
-        break
+    for namespace in (10, 11, 828, 829):
+        task_wiki_import_namespace.delay(dbname, namespace)
     
+    task_wiki_import_noncolon.delay(dbname, namespace)
+
     flash(_('wiki-imported'))
     return redirect(url_for('wiki_action', dbname=dbname))
 
