@@ -110,7 +110,7 @@ class Wiki(db.Model):
         return self.dbname
     
     def get_colon_pages(self, namespace=NS_MAIN, user=None):
-        pagesAll = self.get_pages(namespace)
+        pagesAll = self.get_pages(namespace, user)
         pages = []
         for page in pagesAll:
             if ':' in page:
@@ -118,7 +118,7 @@ class Wiki(db.Model):
         return pages
     
     def get_noncolon_pages(self, namespace=NS_MAIN, user=None):
-        pagesAll = self.get_pages(namespace)
+        pagesAll = self.get_pages(namespace, user)
         pages = []
         for page in pagesAll:
             if ':' not in page:
@@ -136,7 +136,7 @@ class Wiki(db.Model):
         }
         res = []
         while True:
-            data = mwoauth.request(payload, app.config.get('INCUBATOR_MWURI'), user)
+            data = mw_request(payload, app.config.get('INCUBATOR_API'), user).json()
             pages = data.get('query').get('allpages')
             for page in pages:
                 res.append(page.get('title'))
@@ -161,16 +161,16 @@ class Wiki(db.Model):
 
     def import_pages(self, pages, user):
         for page_raw in pages:
-            page = page_raw.replace('%s/' % wiki.prefix, '')
+            page = page_raw.replace('%s/' % self.prefix, '')
 
-            file_path = wiki.get_singlepage_xml_from_incubator(page)
+            file_path = self.get_singlepage_xml_from_incubator(page)
             r = mw_request({
                 "action": "import",
-                "token": get_token('csrf', wiki.api_url),
+                "token": get_token('csrf', self.api_url, user),
                 "assignknownusers": False,
                 "interwikiprefix": 'incubator',
-                "summary": "[TEST] importing %s via a tool" % dbname
-            }, wiki.api_url, user, {
+                "summary": "[TEST] importing %s via a tool" % self.dbname
+            }, self.api_url, user, {
                 'xml': (
                     'file.xml',
                     open(file_path)
@@ -179,7 +179,7 @@ class Wiki(db.Model):
             resp = r.json()
             import_success = 'error' not in resp
             page_obj = Page(
-                wiki_id=wiki.id,
+                wiki_id=self.id,
                 page_title=page,
                 imported_successfully=import_success,
                 error_message=None
@@ -340,6 +340,7 @@ def task_wiki_import_noncolon(dbname, user_id):
 @app.route('/wiki/<path:dbname>/import', methods=['POST'])
 def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
+    user = get_user()
 
     for namespace in (10, 11, 828, 829):
         task_wiki_import_namespace.delay(dbname, user.id, namespace)
