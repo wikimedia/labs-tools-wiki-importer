@@ -109,7 +109,7 @@ class Wiki(db.Model):
     def __str__(self):
         return self.dbname
     
-    def get_colon_pages(self, namespace=NS_MAIN):
+    def get_colon_pages(self, namespace=NS_MAIN, user=None):
         pagesAll = self.get_pages(namespace)
         pages = []
         for page in pagesAll:
@@ -117,7 +117,7 @@ class Wiki(db.Model):
                 pages.append(page)
         return pages
     
-    def get_noncolon_pages(self, namespace=NS_MAIN):
+    def get_noncolon_pages(self, namespace=NS_MAIN, user=None):
         pagesAll = self.get_pages(namespace)
         pages = []
         for page in pagesAll:
@@ -125,7 +125,7 @@ class Wiki(db.Model):
                 pages.append(page)
         return pages
     
-    def get_pages(self, namespace=NS_MAIN):
+    def get_pages(self, namespace=NS_MAIN, user=None):
         payload = {
             "action": "query",
             "format": "json",
@@ -136,7 +136,7 @@ class Wiki(db.Model):
         }
         res = []
         while True:
-            data = mwoauth.request(payload, app.config.get('INCUBATOR_MWURI'))
+            data = mwoauth.request(payload, app.config.get('INCUBATOR_MWURI'), user)
             pages = data.get('query').get('allpages')
             for page in pages:
                 res.append(page.get('title'))
@@ -159,7 +159,7 @@ class Wiki(db.Model):
         f.close()
         return path
 
-    def import_pages(pages):
+    def import_pages(self, pages, user):
         for page_raw in pages:
             page = page_raw.replace('%s/' % wiki.prefix, '')
 
@@ -170,7 +170,7 @@ class Wiki(db.Model):
                 "assignknownusers": False,
                 "interwikiprefix": 'incubator',
                 "summary": "[TEST] importing %s via a tool" % dbname
-            }, wiki.api_url, None, {
+            }, wiki.api_url, user, {
                 'xml': (
                     'file.xml',
                     open(file_path)
@@ -320,17 +320,21 @@ def wiki_action(dbname):
     return render_template('wiki.html', wiki=wiki)
 
 @celery.task(name='wiki_import_namespace')
-def task_wiki_import_namespace(dbname, namespace):
+def task_wiki_import_namespace(dbname, user_id, namespace):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
+    user = User.query.filter_by(id=user_id).first()
     wiki.import_pages(
-        wiki.get_pages(namespace)
+        wiki.get_pages(namespace, user),
+        user
     )
 
 @celery.task(name='wiki_import_noncolon')
-def task_wiki_import_noncolon(dbname):
+def task_wiki_import_noncolon(dbname, user_id):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
+    user = User.query.filter_by(id=user_id).first()
     wiki.import_pages(
-        wiki.get_noncolon_pages()
+        wiki.get_noncolon_pages(NS_MAIN, user),
+        user
     )
 
 @app.route('/wiki/<path:dbname>/import', methods=['POST'])
@@ -338,9 +342,9 @@ def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
 
     for namespace in (10, 11, 828, 829):
-        task_wiki_import_namespace.delay(dbname, namespace)
+        task_wiki_import_namespace.delay(dbname, user.id, namespace)
     
-    task_wiki_import_noncolon.delay(dbname)
+    task_wiki_import_noncolon.delay(dbname, user.id)
 
     flash(_('wiki-imported'))
     return redirect(url_for('wiki_action', dbname=dbname))
