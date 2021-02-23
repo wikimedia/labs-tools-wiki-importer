@@ -2,6 +2,8 @@
 
 set -e
 
+source ~/venv-bastion/bin/activate
+
 cd ~/src
 git pull
 flask db upgrade

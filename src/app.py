@@ -287,7 +287,7 @@ def wiki_import(dbname):
     pages = wiki.get_noncolon_pages()
 
     for page_raw in pages:
-        page = page.replace('%s/' % wiki.prefix, '')
+        page = page_raw.replace('%s/' % wiki.prefix, '')
 
         file_path = wiki.get_singlepage_xml_from_incubator(page)
         r = mw_request({
