@@ -149,9 +149,8 @@ class Wiki(db.Model):
         return res
     
     def get_singlepage_xml_from_incubator(self, page_title):
-        r = s.get('https://incubator.wikimedia.org/wiki/Special:Export/%s/%s?history=1' % (
-            self.prefix,
-            page_title
+        r = s.get('https://incubator.wikimedia.org/wiki/Special:Export/%s?history=1' % (
+            page_title,
         ))
         path = os.path.join(self.path, '%s.xml' % hashlib.md5(page_title.encode('utf-8')).hexdigest())
         f = open(path, 'w')
@@ -160,9 +159,7 @@ class Wiki(db.Model):
         return path
 
     def import_pages(self, pages, user):
-        for page_raw in pages:
-            page = page_raw.replace('%s/' % self.prefix, '')
-
+        for page in pages:
             file_path = self.get_singlepage_xml_from_incubator(page)
             r = mw_request({
                 "action": "import",
