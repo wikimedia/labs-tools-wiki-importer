@@ -10,9 +10,7 @@
     "dbname": "Database name of the production wiki",
     "prefix": "Incubator prefix",
     "import": "Import",
-    "is-clean": "Is clean",
-    "is-split": "Is splitted",
-    "is-imported": "Is imported",
     "go-back": "Go back",
-    "new-wiki": "Add a new wiki to the database"
+    "new-wiki": "Add a new wiki to the database",
+    "wiki-imported": "Wiki was imported successfully."
 }

@@ -37,6 +37,11 @@ migrate = Migrate(app, db)
 ALLOWED_GROUPS = ['new-wikis-importer', 'steward']
 useragent = 'WikiImporter (tools.wiki-importer@tools.wmflabs.org)'
 
+s = requests.Session()
+s.headers.update({'User-Agent': useragent})
+
+NS_MAIN = 0
+
 # Load configuration from YAML file
 __dir__ = os.path.dirname(__file__)
 app.config.update(
@@ -85,6 +90,13 @@ class User(db.Model):
     token_key = db.Column(db.String(255))
     token_secret = db.Column(db.String(255))
 
+class Page(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    wiki_id = db.Column(db.Integer, db.ForeignKey('wiki.id'))
+    page_title = db.Column(db.String(255))
+    imported_successfully = db.Column(db.Boolean, default=False)
+    error_message = db.Column(db.Text, nullable=True)
+
 class Wiki(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     dbname = db.Column(db.String(255))
@@ -94,6 +106,22 @@ class Wiki(db.Model):
 
     def __str__(self):
         return self.dbname
+    
+    def get_colon_pages(self):
+        pagesAll = self.get_pages(NS_MAIN)
+        pages = []
+        for page in pagesAll:
+            if ':' in page:
+                pages.append(page)
+        return pages
+    
+    def get_noncolon_pages(self):
+        pagesAll = self.get_pages(NS_MAIN)
+        pages = []
+        for page in pagesAll:
+            if ':' not in page:
+                pages.append(page)
+        return pages
     
     def get_pages(self, namespace=None):
         payload = {
@@ -116,6 +144,17 @@ class Wiki(db.Model):
             else:
                 break
         return res
+    
+    def get_singlepage_xml_from_incubator(self, page_title):
+        r = s.get('https://incubator.wikimedia.org/wiki/Special:Export/%s/%s?history=1' % (
+            self.prefix,
+            page_title
+        ))
+        path = os.path.join(self.path, '%s.xml' % page_title)
+        f = open(path, 'w')
+        f.write(r.content.decode('utf-8').replace('%s/' % self.prefix, ''))
+        f.close()
+        return path
 
     @property
     def path(self):
@@ -127,6 +166,14 @@ class Wiki(db.Model):
     @property
     def raw_path(self):
         return os.path.join(app.config.get('TMP_DIR'), self.dbname)
+    
+    @property
+    def url(self):
+        return 'https://mni.wikipedia.org/w'
+    
+    @property
+    def api_url(self):
+        return '%s/api.php' % self.url
 
 
 def logged():
@@ -137,7 +184,7 @@ def get_user():
         username=mwoauth.get_current_user()
     ).first()
 
-def mw_request(data, url=None, user=None):
+def mw_request(data, url=None, user=None, files={}):
     if url is None:
         api_url = mwoauth.api_url + "/api.php"
     else:
@@ -151,7 +198,15 @@ def mw_request(data, url=None, user=None):
         request_token_key = user.token_key
     auth = OAuth1(app.config.get('CONSUMER_KEY'), app.config.get('CONSUMER_SECRET'), request_token_key, request_token_secret)
     data['format'] = 'json'
-    return requests.post('https://meta.wikimedia.org/w/api.php', data=data, auth=auth, headers={'User-Agent': useragent})
+    return requests.post(api_url, data=data, files=files, auth=auth, headers={'User-Agent': useragent})
+
+def get_token(type, url=None, user=None):
+    data = mw_request({
+        'action': 'query',
+        'meta': 'tokens',
+        'type': type
+    }, url, user).json()
+    return data.get('query', {}).get('tokens', {}).get('%stoken' % type)
 
 @app.context_processor
 def inject_base_variables():
@@ -224,6 +279,45 @@ def new_wiki():
 def wiki_action(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki.html', wiki=wiki)
+
+@app.route('/wiki/<path:dbname>/import', methods=['POST'])
+def wiki_import(dbname):
+    wiki = Wiki.query.filter_by(dbname=dbname).first()
+
+    pages = wiki.get_noncolon_pages()
+    pages = ['A']
+
+    for page in pages:
+        file_path = wiki.get_singlepage_xml_from_incubator(page)
+        r = mw_request({
+            "action": "import",
+            "token": get_token('csrf', wiki.api_url),
+            "assignknownusers": False,
+            "interwikiprefix": 'incubator',
+            "summary": "[TEST] importing %s via a tool" % dbname
+        }, wiki.api_url, None, {
+            'xml': (
+                'file.xml',
+                open(file_path)
+            )
+        })
+        resp = r.json()
+        import_success = 'error' not in resp
+        page_obj = Page(
+            wiki_id=wiki.id,
+            page_title=page,
+            imported_successfully=import_success,
+            error_message=None
+        )
+        if not import_success:
+            page_obj.error_message = json.dumps(resp)
+        
+        db.session.add(page_obj)
+        db.session.commit()
+        break
+    
+    flash(_('wiki-imported'))
+    return redirect(url_for('wiki_action', dbname=dbname))
 
 @app.route('/test.json')
 def test():

@@ -3,8 +3,9 @@
 {% block content %}
 <div class="container">
     <h1>{{wiki}}</h1>
-    <ul>
-        <li>???</li>
-    </ul>
+
+    <form method="POST" action="{{ url_for('wiki_import', dbname=wiki) }}">
+        <input class="btn btn-primary btn-success form-control" type="submit" value="{{ _('import') }}">
+    </form>
 </div>
 {% endblock %}
