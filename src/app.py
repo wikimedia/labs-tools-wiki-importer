@@ -108,29 +108,30 @@ class Wiki(db.Model):
     def __str__(self):
         return self.dbname
     
-    def get_colon_pages(self):
-        pagesAll = self.get_pages(NS_MAIN)
+    def get_colon_pages(self, namespace=NS_MAIN):
+        pagesAll = self.get_pages(namespace)
         pages = []
         for page in pagesAll:
             if ':' in page:
                 pages.append(page)
         return pages
     
-    def get_noncolon_pages(self):
-        pagesAll = self.get_pages(NS_MAIN)
+    def get_noncolon_pages(self, namespace=NS_MAIN):
+        pagesAll = self.get_pages(namespace)
         pages = []
         for page in pagesAll:
             if ':' not in page:
                 pages.append(page)
         return pages
     
-    def get_pages(self, namespace=None):
+    def get_pages(self, namespace=NS_MAIN):
         payload = {
             "action": "query",
             "format": "json",
             "list": "allpages",
             "aplimit": "max",
-            "apprefix": "%s/" % self.prefix
+            "apprefix": "%s/" % self.prefix,
+            "apnamespace": namespace
         }
         res = []
         while True:
