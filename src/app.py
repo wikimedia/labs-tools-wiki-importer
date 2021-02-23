@@ -340,7 +340,7 @@ def wiki_import(dbname):
     for namespace in (10, 11, 828, 829):
         task_wiki_import_namespace.delay(dbname, namespace)
     
-    task_wiki_import_noncolon.delay(dbname, namespace)
+    task_wiki_import_noncolon.delay(dbname)
 
     flash(_('wiki-imported'))
     return redirect(url_for('wiki_action', dbname=dbname))
