@@ -101,6 +101,7 @@ class Page(db.Model):
 class Wiki(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     dbname = db.Column(db.String(255))
+    domain = db.Column(db.String(255))
     prefix = db.Column(db.String(255))
     is_imported = db.Column(db.Boolean, default=False)
     import_started = db.Column(db.Boolean, default=False)
@@ -171,7 +172,7 @@ class Wiki(db.Model):
     
     @property
     def url(self):
-        return 'https://mni.wikipedia.org/w'
+        return 'https://%s/w' % self.domain
     
     @property
     def api_url(self):
@@ -271,7 +272,11 @@ def index():
 
 @app.route('/new-wiki', methods=['POST'])
 def new_wiki():
-    w = Wiki(dbname=request.form.get('dbname'), prefix=request.form.get('prefix'))
+    w = Wiki(
+        dbname=request.form.get('dbname'),
+        domain=request.form.get('domain'),
+        prefix=request.form.get('prefix')
+    )
     db.session.add(w)
     db.session.commit()
     return redirect(url_for('index'))

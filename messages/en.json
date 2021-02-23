@@ -8,6 +8,7 @@
     "welcome": "Welcome to the tool",
     "list-of-unimported-wikis": "List of unimported wikis",
     "dbname": "Database name of the production wiki",
+    "domain": "Domain",
     "prefix": "Incubator prefix",
     "import": "Import",
     "go-back": "Go back",
