@@ -9,4 +9,4 @@ git pull
 flask db upgrade
 bash ~/bin/wiki-importer.sh stop || true
 bash ~/bin/wiki-importer.sh start || true
-webservice --backend=kubernetes python restart
+webservice --backend=kubernetes python3.7 stop && webservice --backend=kubernetes python3.7 start
