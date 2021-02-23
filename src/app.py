@@ -316,19 +316,19 @@ def wiki_action(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname)[0]
     return render_template('wiki.html', wiki=wiki)
 
-@celery.task(name='wiki_import_namespace')
-def task_wiki_import_namespace(dbname, user_id, namespace):
+@celery.task(name='wiki_import_all')
+def task_wiki_import_all(dbname, user_id):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
     user = User.query.filter_by(id=user_id).first()
-    wiki.import_pages(
-        wiki.get_pages(namespace, user),
-        user
-    )
 
-@celery.task(name='wiki_import_noncolon')
-def task_wiki_import_noncolon(dbname, user_id):
-    wiki = Wiki.query.filter_by(dbname=dbname).first()
-    user = User.query.filter_by(id=user_id).first()
+    # import modules and templates, if any
+    for namespace in (10, 11, 828, 829):
+        wiki.import_pages(
+            wiki.get_pages(namespace, user),
+            user
+        )
+
+    # import main namespace
     wiki.import_pages(
         wiki.get_noncolon_pages(NS_MAIN, user),
         user
@@ -339,10 +339,7 @@ def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
     user = get_user()
 
-    for namespace in (10, 11, 828, 829):
-        task_wiki_import_namespace.delay(dbname, user.id, namespace)
-    
-    task_wiki_import_noncolon.delay(dbname, user.id)
+    task_wiki_import_all.delay(dbname, user.id)
 
     flash(_('wiki-imported'))
     return redirect(url_for('wiki_action', dbname=dbname))
