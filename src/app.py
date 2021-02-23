@@ -95,7 +95,7 @@ class Wiki(db.Model):
     def __str__(self):
         return self.dbname
     
-    def get_pages(self):
+    def get_pages(self, namespace=None):
         payload = {
             "action": "query",
             "format": "json",
@@ -128,66 +128,6 @@ class Wiki(db.Model):
     def raw_path(self):
         return os.path.join(app.config.get('TMP_DIR'), self.dbname)
 
-    def reset(self):
-        if os.path.exists(self.raw_path):
-            shutil.rmtree(self.raw_path)
-
-        self.is_clean = False
-        self.clean_started = False
-        self.clean_std_err = ""
-        self.clean_std_out = ""
-        self.is_split = False
-        self.split_started = False
-        self.split_std_err = ""
-        self.split_std_out = ""
-        self.is_imported = False
-        self.import_started = False
-        db.session.commit()
-
-    def save_xml(self):
-        if os.path.exists(os.path.join(self.path, 'all.xml')):
-            return True
-        pages = self.get_pages()
-        url = app.config.get('INCUBATOR_MWURI') + '/index.php'
-        r = requests.post(url, data={
-            "title": 'Special:Export',
-            "pages": "\n".join(pages)
-        })
-        open(os.path.join(self.path, 'all.xml'), 'wb').write(r.content)
-        return r.status_code == 200
-
-    def clean_xml(self):
-        xml_source = os.path.abspath(os.path.join(self.path, 'all.xml'))
-        cleaner = os.path.join(__dir__, 'IncubatorCleanup', 'cleaner.py')
-        p = subprocess.Popen(['python3', cleaner, self.prefix, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.wait()
-        out, err = p.communicate()
-
-        if os.path.exists(os.path.join(self.path, 'all.ready.xml')):
-            self.is_clean = True
-
-        self.clean_std_out = out.decode('utf-8')
-        self.clean_std_err = err.decode('utf-8')
-        db.session.commit()
-
-        return (out.decode('utf-8'), err.decode('utf-8'))
-    
-    def split_xml(self):
-        xml_source = 'all.ready.xml'
-        if os.path.exists(os.path.join(self.path, 'all')):
-            shutil.rmtree(os.path.join(self.path, 'all'))
-
-        splitter = os.path.join(__dir__, 'IncubatorCleanup', 'splitter.py')
-        p = subprocess.Popen(['python3', splitter, xml_source], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.path)
-        out, err = p.communicate()
-
-        if os.path.exists(os.path.join(self.path, 'all', 'all_1.xml')):
-            self.is_split = True
-
-        self.split_std_out = out.decode('utf-8')
-        self.split_std_err = err.decode('utf-8')
-        db.session.commit()
-        return (out.decode('utf-8'), err.decode('utf-8'))
 
 def logged():
     return mwoauth.get_current_user() is not None
