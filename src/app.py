@@ -285,9 +285,10 @@ def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
 
     pages = wiki.get_noncolon_pages()
-    pages = ['A']
 
-    for page in pages:
+    for page_raw in pages:
+        page = page.replace('%s/' % wiki.prefix, '')
+
         file_path = wiki.get_singlepage_xml_from_incubator(page)
         r = mw_request({
             "action": "import",
