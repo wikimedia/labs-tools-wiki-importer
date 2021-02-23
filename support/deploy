@@ -7,5 +7,6 @@ source ~/venv-bastion/bin/activate
 cd ~/src
 git pull
 flask db upgrade
-bash ~/bin/wiki-importer.sh restart || true
+bash ~/bin/wiki-importer.sh stop || true
+bash ~/bin/wiki-importer.sh start || true
 webservice --backend=kubernetes python restart
