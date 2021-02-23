@@ -165,7 +165,7 @@ class Wiki(db.Model):
                 "action": "import",
                 "token": get_token('csrf', self.api_url, user),
                 "assignknownusers": False,
-                "interwikiprefix": 'incubator',
+                "interwikiprefix": 'incubator:',
                 "summary": "[TEST] importing %s via a tool" % self.dbname
             }, self.api_url, user, {
                 'xml': (
