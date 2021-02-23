@@ -28,6 +28,7 @@ from flask_migrate import Migrate
 from celery import Celery
 from requests_oauthlib import OAuth1
 import shutil
+import hashlib
 
 app = Flask(__name__, static_folder='../static')
 
@@ -150,7 +151,7 @@ class Wiki(db.Model):
             self.prefix,
             page_title
         ))
-        path = os.path.join(self.path, '%s.xml' % page_title)
+        path = os.path.join(self.path, '%s.xml' % hashlib.md5(page_title.encode('utf-8')).hexdigest())
         f = open(path, 'w')
         f.write(r.content.decode('utf-8').replace('%s/' % self.prefix, ''))
         f.close()
