@@ -164,7 +164,7 @@ class Wiki(db.Model):
             r = mw_request({
                 "action": "import",
                 "token": get_token('csrf', self.api_url, user),
-                "assignknownusers": True,
+                "assignknownusers": "1",
                 "interwikiprefix": 'incubator:',
                 "summary": "[TEST] importing %s via a tool" % self.dbname
             }, self.api_url, user, {
@@ -186,7 +186,6 @@ class Wiki(db.Model):
             
             db.session.add(page_obj)
             db.session.commit()
-            break
 
     @property
     def path(self):
