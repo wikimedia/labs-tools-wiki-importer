@@ -174,7 +174,18 @@ class Wiki(db.Model):
                     open(file_path)
                 )
             })
-            resp = r.json()
+            try:
+                resp = r.json()
+            except:
+                page_obj = Page(
+                    wiki_id=self.id,
+                    page_title=page,
+                    imported_successfully=False,
+                    error_message="Failed to decode server response"
+                )
+                db.session.add(page_obj)
+                db.session.commit()
+                continue
             import_success = 'error' not in resp
             page_obj = Page(
                 wiki_id=self.id,
