@@ -29,6 +29,7 @@ from celery import Celery
 from requests_oauthlib import OAuth1
 import shutil
 import hashlib
+import simplejson as json
 
 app = Flask(__name__, static_folder='../static')
 
