@@ -264,7 +264,7 @@ def mw_request(data, url=None, user=None, files={}, retryOnErrors=['mwoauth-inva
     tmp = r.json()
     error_code = tmp.get('error', {}).get('code', None)
     if error_code in retryOnErrors:
-        return make_response(data, url, user, files, [])
+        return mw_request(data, url, user, files, [])
 
     return r
 
