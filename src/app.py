@@ -172,7 +172,7 @@ class Wiki(db.Model):
 
     def import_pages(self, pages, user):
         for page in pages:
-            if self.page_exists(page, user):
+            if self.page_exists(page.replace('%s/' % self.prefix, ''), user):
                 # skip existing pages
                 continue
 
