@@ -246,7 +246,7 @@ def get_user():
         username=mwoauth.get_current_user()
     ).first()
 
-def mw_request(data, url=None, user=None, files={}):
+def mw_request(data, url=None, user=None, files={}, retryOnErrors=['mwoauth-invalid-authorization']):
     if url is None:
         api_url = mwoauth.api_url + "/api.php"
     else:
@@ -260,7 +260,13 @@ def mw_request(data, url=None, user=None, files={}):
         request_token_key = user.token_key
     auth = OAuth1(app.config.get('CONSUMER_KEY'), app.config.get('CONSUMER_SECRET'), request_token_key, request_token_secret)
     data['format'] = 'json'
-    return requests.post(api_url, data=data, files=files, auth=auth, headers={'User-Agent': useragent})
+    r = requests.post(api_url, data=data, files=files, auth=auth, headers={'User-Agent': useragent})
+    tmp = r.json()
+    error_code = tmp.get('error', {}).get('code', None)
+    if error_code in retryOnErrors:
+        return make_response(data, url, user, files, [])
+
+    return r
 
 def get_token(type, url=None, user=None):
     data = mw_request({
