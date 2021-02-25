@@ -159,8 +159,23 @@ class Wiki(db.Model):
         f.close()
         return path
 
+    def page_exists(self, page_title, user):
+        r = mw_request({
+            "action": "query",
+            "format": "json",
+            "titles": page_title
+        }, self.api_url, user)
+        data = r.json().get('query', {}).get('pages', {})
+        page_id = list(data.keys())[0]
+        page_data = data[page_id]
+        return 'missing' not in page_data
+
     def import_pages(self, pages, user):
         for page in pages:
+            if self.page_exists(page, user):
+                # skip existing pages
+                continue
+
             file_path = self.get_singlepage_xml_from_incubator(page)
             r = mw_request({
                 "action": "import",
