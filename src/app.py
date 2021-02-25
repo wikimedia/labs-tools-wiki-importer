@@ -155,7 +155,7 @@ class Wiki(db.Model):
         ))
         path = os.path.join(self.path, '%s.xml' % hashlib.md5(page_title.encode('utf-8')).hexdigest())
         f = open(path, 'w')
-        f.write(r.content.decode('utf-8').replace('%s/' % self.prefix, ''))
+        f.write(r.content.decode('utf-8').replace('%s/' % self.prefix, '').replace('%s/' % self.prefix.lower(), ''))
         f.close()
         return path
 
