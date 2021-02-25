@@ -163,10 +163,14 @@ class Wiki(db.Model):
         r = mw_request({
             "action": "query",
             "format": "json",
-            "titles": page_title
+            "titles": page_title.replace(' ', '_')
         }, self.api_url, user)
         data = r.json().get('query', {}).get('pages', {})
-        page_id = list(data.keys())[0]
+        try:
+            page_id = list(data.keys())[0]
+        except IndexError:
+            print('Failed existance check for page_title=%s' % page_title)
+            raise
         page_data = data[page_id]
         return 'missing' not in page_data
 
