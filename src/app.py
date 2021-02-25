@@ -370,6 +370,13 @@ def task_wiki_import_all(dbname, user_id):
         user
     )
 
+    # import other important namespaces
+    for namepsace in (1, 14, 15):
+        wiki.import_pages(
+            wiki.get_pages(namespace, user),
+            user
+        )
+
 @app.route('/wiki/<path:dbname>/import', methods=['POST'])
 def wiki_import(dbname):
     wiki = Wiki.query.filter_by(dbname=dbname).first()
