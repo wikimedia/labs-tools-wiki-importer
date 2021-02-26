@@ -198,6 +198,12 @@ class Wiki(db.Model):
                 continue
 
             file_path = self.get_singlepage_xml_from_incubator(page)
+            if app.config.get('SKIP_IMPORT', False):
+                print('DRY-RUN: Importing {page} using {xml} as input XML'.format(
+                    page=page,
+                    xml=file_path
+                ))
+                continue
             r = mw_request({
                 "action": "import",
                 "token": get_token('csrf', self.api_url, user),
