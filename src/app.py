@@ -30,6 +30,7 @@ from requests_oauthlib import OAuth1
 import shutil
 import hashlib
 import simplejson as json
+import re
 
 app = Flask(__name__, static_folder='../static')
 
@@ -106,6 +107,7 @@ class Wiki(db.Model):
     prefix = db.Column(db.String(255))
     is_imported = db.Column(db.Boolean, default=False)
     import_started = db.Column(db.Boolean, default=False)
+    is_wiktionary = False
 
     def __str__(self):
         return self.dbname
@@ -149,29 +151,62 @@ class Wiki(db.Model):
                 break
         return res
 
-    def clean_xml(self, path, is_wiktionary=False):
-        cleaner = os.path.join(__dir__, 'IncubatorCleanup', 'cleaner.py')
-        cmd = ['python3', cleaner]
-        if is_wiktionary:
-            cmd += ['--wiktionary']
-        newPath = os.path.split(path)
-        cmd += [self.prefix, newPath[1]]
-        p = subprocess.Popen(cmd, cwd=os.path.split(path)[0])
-        p.wait()
-        newPath = os.path.join(
-            newPath[0],
-            newPath[1].replace('.xml', '.ready.xml')
-        )
-        os.rename(newPath, path)
-        return p.communicate()
-    
+    def get_namespaces(self, user):
+        if not self.namespaces:
+            namespaces = {}
+            r = mw_request({
+                "action": "query",
+                "format": "json",
+                "meta": "siteinfo",
+                "siprop": "namespaces"
+            }, self.api_url, user)
+            data = r.json().get('query', {}).get('namespaces', {})
+            for ns in data:
+                if not ns == "0":
+                    namespaces[data[ns]["canonical"]] = data[ns]["*"]
+                if ns == "6":
+                    namespaces["Image"] = data[ns]["*"]
+            if data["0"]["case"] == "case-sensitive":
+                self.is_wiktionary = True
+            self.namespaces = namespaces
+        return self.namespaces
+
+    def clean_line(self, line):
+        prefix = self.prefix
+        prefix = "[" + prefix[0].upper() + prefix[0].lower() + "]" + prefix[1:]
+        # Replace all instances of the prefix + trailing slash
+        line = re.sub(r" *(?i:" + prefix + r")/", "", line)
+        if not self.is_wiktionary:
+            # Turn [[Abc|abc]] into [[abc]]
+            line = re.sub(r"\[\[ *((?i:\w))(.*?) *\| *((?i:\1)\2)\ *\]\]", r"[[\3]]", line)
+            # Turn [[Abc|abcdef]] into [[abc]]def
+            line = re.sub(r"\[\[ *((?i:\w))(.*?) *\| *((?i:\1)\2)(\w+) *\]\]", r"[[\3]]\4", line)
+        else:
+            # Turn [[abc|abc]] into [[abc]]
+            line = re.sub(r"\[\[ *(.*?) *\| *\1 *\]\]", r"[[\1]]", line)
+            # Turn [[abc|abcdef]] into [[abc]]def
+            line = re.sub(r"\[\[ *(.*?) *\| *\1(\w+) *\]\]", r"[[\1]]\2", line)
+        # Remove the base category
+        line = re.sub(r"\[\[ *[Cc]ategory *: *" + prefix + r".*?\]\]\n?", "", text)
+        # Remove {{PAGENAME}} category sortkeys, and one-letter-only sortkeys
+        line = re.sub(r"\[\[ *[Cc]ategory *: *(.+?)\|{{(SUB)?PAGENAME}} *\]\]", r"[[Category:\1]]", line)
+        line = re.sub(r"\[\[ *[Cc]ategory *: *(.+?)\|\w *\]\]", r"[[Category:\1]]", line)
+        # Translate namespaces
+        get_namespaces(user)
+        for key in self.namespaces:
+            key_regex = r"[" + key[0].upper() + key[0].lower() + r"]" + key[1:]
+            line = re.sub(re.sub(r"\[\[ *" + key_regex + r" *: *([^\|\]])", r"[[" + self.namespaces[key] + r":\1", text))
+        return line
+
     def get_singlepage_xml_from_incubator(self, page_title):
         r = s.get('https://incubator.wikimedia.org/wiki/Special:Export/%s?history=1' % (
             page_title,
         ))
         path = os.path.join(self.path, '%s.xml' % hashlib.md5(page_title.encode('utf-8')).hexdigest())
-        f = open(path, 'w')
-        f.write(r.content.decode('utf-8'))
+        f = open(path, 'a')
+        for line in r.content.decode('utf-8').split('\n'):
+            line = line + "\n"
+            f.write(clean_line(line))
         f.close()
         self.clean_xml(path)
         return path
