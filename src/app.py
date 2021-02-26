@@ -148,6 +148,22 @@ class Wiki(db.Model):
             else:
                 break
         return res
+
+    def clean_xml(self, path, is_wiktionary=False):
+        cleaner = os.path.join(__dir__, 'IncubatorCleanup', 'cleaner.py')
+        cmd = ['python3', cleaner]
+        if is_wiktionary:
+            cmd += ['--wiktionary']
+        newPath = os.path.split(path)
+        cmd += [self.prefix, newPath[1]]
+        p = subprocess.Popen(cmd, cwd=os.path.split(path)[0])
+        p.wait()
+        newPath = os.path.join(
+            newPath[0],
+            newPath[1].replace('.xml', '.ready.xml')
+        )
+        os.rename(newPath, path)
+        return p.communicate()
     
     def get_singlepage_xml_from_incubator(self, page_title):
         r = s.get('https://incubator.wikimedia.org/wiki/Special:Export/%s?history=1' % (
@@ -155,8 +171,9 @@ class Wiki(db.Model):
         ))
         path = os.path.join(self.path, '%s.xml' % hashlib.md5(page_title.encode('utf-8')).hexdigest())
         f = open(path, 'w')
-        f.write(r.content.decode('utf-8').replace('%s/' % self.prefix, '').replace('%s/' % self.prefix.lower(), ''))
+        f.write(r.content.decode('utf-8'))
         f.close()
+        self.clean_xml(path)
         return path
 
     def page_exists(self, page_title, user):
