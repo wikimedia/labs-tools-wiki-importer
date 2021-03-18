@@ -151,7 +151,7 @@ class Wiki(db.Model):
                 break
         return res
 
-    def get_namespaces(self, user):
+    def get_namespaces(self):
         if not self.namespaces:
             namespaces = {}
             r = mw_request({
@@ -159,7 +159,7 @@ class Wiki(db.Model):
                 "format": "json",
                 "meta": "siteinfo",
                 "siprop": "namespaces"
-            }, self.api_url, user)
+            }, self.api_url, None, {}, True)
             data = r.json().get('query', {}).get('namespaces', {})
             for ns in data:
                 if not ns == "0":
@@ -187,15 +187,15 @@ class Wiki(db.Model):
             # Turn [[abc|abcdef]] into [[abc]]def
             line = re.sub(r"\[\[ *(.*?) *\| *\1(\w+) *\]\]", r"[[\1]]\2", line)
         # Remove the base category
-        line = re.sub(r"\[\[ *[Cc]ategory *: *" + prefix + r".*?\]\]\n?", "", text)
+        line = re.sub(r"\[\[ *[Cc]ategory *: *" + prefix + r".*?\]\]\n?", "", line)
         # Remove {{PAGENAME}} category sortkeys, and one-letter-only sortkeys
         line = re.sub(r"\[\[ *[Cc]ategory *: *(.+?)\|{{(SUB)?PAGENAME}} *\]\]", r"[[Category:\1]]", line)
         line = re.sub(r"\[\[ *[Cc]ategory *: *(.+?)\|\w *\]\]", r"[[Category:\1]]", line)
         # Translate namespaces
-        self.get_namespaces(user)
+        self.get_namespaces()
         for key in self.namespaces:
             key_regex = r"[" + key[0].upper() + key[0].lower() + r"]" + key[1:]
-            line = re.sub(re.sub(r"\[\[ *" + key_regex + r" *: *([^\|\]])", r"[[" + self.namespaces[key] + r":\1", text))
+            line = re.sub(re.sub(r"\[\[ *" + key_regex + r" *: *([^\|\]])", r"[[" + self.namespaces[key] + r":\1", line))
         return line
 
     def get_singlepage_xml_from_incubator(self, page_title):
@@ -303,21 +303,24 @@ def get_user():
         username=mwoauth.get_current_user()
     ).first()
 
-def mw_request(data, url=None, user=None, files={}, retryOnErrors=['mwoauth-invalid-authorization']):
+def mw_request(data, url=None, user=None, files={}, skipAuth=False, retryOnErrors=['mwoauth-invalid-authorization']):
     if url is None:
         api_url = mwoauth.api_url + "/api.php"
     else:
         api_url = url
-    if user is None:
-        access_token = session.get('mwoauth_access_token', {})
-        request_token_secret = access_token.get('secret').decode('utf-8')
-        request_token_key = access_token.get('key').decode('utf-8')
-    else:
-        request_token_secret = user.token_secret
-        request_token_key = user.token_key
-    auth = OAuth1(app.config.get('CONSUMER_KEY'), app.config.get('CONSUMER_SECRET'), request_token_key, request_token_secret)
     data['format'] = 'json'
-    r = requests.post(api_url, data=data, files=files, auth=auth, headers={'User-Agent': useragent})
+    if not skipAuth:
+        if user is None:
+            access_token = session.get('mwoauth_access_token', {})
+            request_token_secret = access_token.get('secret').decode('utf-8')
+            request_token_key = access_token.get('key').decode('utf-8')
+        else:
+            request_token_secret = user.token_secret
+            request_token_key = user.token_key
+        auth = OAuth1(app.config.get('CONSUMER_KEY'), app.config.get('CONSUMER_SECRET'), request_token_key, request_token_secret)
+        r = requests.post(api_url, data=data, files=files, auth=auth, headers={'User-Agent': useragent})
+    else:
+        r = requests.post(api_url, data=data, files=files, headers={'User-Agent': useragent})
     try:
         tmp = r.json()
     except:
