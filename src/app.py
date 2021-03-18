@@ -226,12 +226,38 @@ class Wiki(db.Model):
         page_data = data[page_id]
         return 'missing' not in page_data
 
+    def get_user_names_incubator(self, page_title, user):
+        r = mw_request({
+            "action": "query",
+            "format": "json",
+            "prop": "revisions",
+            "titles": page_title,
+            "rvprop": "user",
+            "rvlimit": "max"
+        }, app.config.get('INCUBATOR_API'), user)
+        data = r.json()['query']['pages']
+        users = set()
+        revs = data[list(data.keys())[0]]['revisions']
+        for rev in revs:
+            users.add(rev['user'])
+        return users
+
     def import_pages(self, pages, user):
         for page in pages:
             if self.page_exists(page.replace('%s/' % self.prefix, ''), user):
                 # skip existing pages
                 continue
 
+            users = get_user_names_incubator(page, user)
+            token = get_token('csrf', self.api_url, user)
+            for user in users:
+                mw_request({
+                    "action": "createlocalaccount",
+                    "format": "json",
+                    "username": user,
+                    "reason": "force-creating local user before import",
+                    "token": token
+                })
             file_path = self.get_singlepage_xml_from_incubator(page)
             if app.config.get('SKIP_IMPORT', False):
                 print('DRY-RUN: Importing {page} using {xml} as input XML'.format(
@@ -241,7 +267,7 @@ class Wiki(db.Model):
                 continue
             r = mw_request({
                 "action": "import",
-                "token": get_token('csrf', self.api_url, user),
+                "token": token,
                 "assignknownusers": "1",
                 "interwikiprefix": 'incubator:',
                 "summary": "[TEST] importing %s via a tool" % self.dbname
