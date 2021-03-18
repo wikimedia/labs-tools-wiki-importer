@@ -319,7 +319,11 @@ def mw_request(data, url=None, user=None, files={}, retryOnErrors=['mwoauth-inva
     auth = OAuth1(app.config.get('CONSUMER_KEY'), app.config.get('CONSUMER_SECRET'), request_token_key, request_token_secret)
     data['format'] = 'json'
     r = requests.post(api_url, data=data, files=files, auth=auth, headers={'User-Agent': useragent})
-    tmp = r.json()
+    try:
+        tmp = r.json()
+    except:
+        print('Retrying request')
+        return mw_request(data, url, user, files, [])
     error_code = tmp.get('error', {}).get('code', None)
     if error_code in retryOnErrors:
         return mw_request(data, url, user, files, [])
