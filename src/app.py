@@ -196,7 +196,7 @@ class Wiki(db.Model):
         self.get_namespaces()
         for key in self.namespaces:
             key_regex = r"[" + key[0].upper() + key[0].lower() + r"]" + key[1:]
-            line = re.sub(re.sub(r"\[\[ *" + key_regex + r" *: *([^\|\]])", r"[[" + self.namespaces[key] + r":\1", line))
+            line = re.sub(r"\[\[ *" + key_regex + r" *: *([^\|\]])", r"[[" + self.namespaces[key] + r":\1", line)
         return line
 
     def get_singlepage_xml_from_incubator(self, page_title):
