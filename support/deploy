@@ -5,7 +5,8 @@ set -e
 source ~/venv-bastion/bin/activate
 
 cd ~/src
-git pull
+git fetch
+git rebase
 flask db upgrade
 bash ~/bin/wiki-importer.sh stop || true
 bash ~/bin/wiki-importer.sh start || true

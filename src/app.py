@@ -248,16 +248,16 @@ class Wiki(db.Model):
                 # skip existing pages
                 continue
 
-            users = get_user_names_incubator(page, user)
+            users = self.get_user_names_incubator(page, user)
             token = get_token('csrf', self.api_url, user)
-            for user in users:
+            for user_name in users:
                 mw_request({
                     "action": "createlocalaccount",
                     "format": "json",
-                    "username": user,
+                    "username": user_name,
                     "reason": "force-creating local user before import",
                     "token": token
-                })
+                }, self.api_url, user)
             file_path = self.get_singlepage_xml_from_incubator(page)
             if app.config.get('SKIP_IMPORT', False):
                 print('DRY-RUN: Importing {page} using {xml} as input XML'.format(
@@ -330,7 +330,7 @@ def get_user():
         username=mwoauth.get_current_user()
     ).first()
 
-def mw_request(data, url=None, user=None, files={}, skipAuth=False, retryOnErrors=['mwoauth-invalid-authorization']):
+def mw_request(data, url=None, user=None, files={}, skipAuth=False, noIgnoreError=False):
     if url is None:
         api_url = mwoauth.api_url + "/api.php"
     else:
@@ -348,15 +348,20 @@ def mw_request(data, url=None, user=None, files={}, skipAuth=False, retryOnError
         r = requests.post(api_url, data=data, files=files, auth=auth, headers={'User-Agent': useragent})
     else:
         r = requests.post(api_url, data=data, files=files, headers={'User-Agent': useragent})
+    if noIgnoreError:
+        return r
+
     try:
         tmp = r.json()
+        error_code_raw = tmp.get('error')
+        if error_code is not None:
+            print(error_code_raw)
+            if type(error_code_raw) == dict and error_code_raw.get('code') == 'mwoauth-invalid-authorization':
+                return mw_request(data, url, user, files, skipAuth, True)
     except:
         print('Retrying request')
-        return mw_request(data, url, user, files, [])
-    error_code = tmp.get('error', {}).get('code', None)
-    if error_code in retryOnErrors:
-        return mw_request(data, url, user, files, [])
-
+        return mw_request(data, url, user, files, skipAuth, True)
+    
     return r
 
 def get_token(type, url=None, user=None):
