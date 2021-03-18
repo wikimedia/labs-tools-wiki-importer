@@ -108,6 +108,7 @@ class Wiki(db.Model):
     is_imported = db.Column(db.Boolean, default=False)
     import_started = db.Column(db.Boolean, default=False)
     is_wiktionary = False
+    namespaces = None
 
     def __str__(self):
         return self.dbname
