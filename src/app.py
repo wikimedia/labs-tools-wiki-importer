@@ -192,7 +192,7 @@ class Wiki(db.Model):
         line = re.sub(r"\[\[ *[Cc]ategory *: *(.+?)\|{{(SUB)?PAGENAME}} *\]\]", r"[[Category:\1]]", line)
         line = re.sub(r"\[\[ *[Cc]ategory *: *(.+?)\|\w *\]\]", r"[[Category:\1]]", line)
         # Translate namespaces
-        get_namespaces(user)
+        self.get_namespaces(user)
         for key in self.namespaces:
             key_regex = r"[" + key[0].upper() + key[0].lower() + r"]" + key[1:]
             line = re.sub(re.sub(r"\[\[ *" + key_regex + r" *: *([^\|\]])", r"[[" + self.namespaces[key] + r":\1", text))
@@ -206,9 +206,8 @@ class Wiki(db.Model):
         f = open(path, 'a')
         for line in r.content.decode('utf-8').split('\n'):
             line = line + "\n"
-            f.write(clean_line(line))
+            f.write(self.clean_line(line))
         f.close()
-        self.clean_xml(path)
         return path
 
     def page_exists(self, page_title, user):
