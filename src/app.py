@@ -204,7 +204,7 @@ class Wiki(db.Model):
             page_title,
         ))
         path = os.path.join(self.path, '%s.xml' % hashlib.md5(page_title.encode('utf-8')).hexdigest())
-        f = open(path, 'a')
+        f = open(path, 'w')
         for line in r.content.decode('utf-8').split('\n'):
             line = line + "\n"
             f.write(self.clean_line(line))
