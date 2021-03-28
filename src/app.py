@@ -454,7 +454,7 @@ def task_wiki_import_all(dbname, user_id):
     user = User.query.filter_by(id=user_id).first()
 
     # import modules and templates, if any
-    for namespace in (10, 11, 828, 829):
+    for namespace in (10, 11, 14, 15, 828, 829):
         wiki.import_pages(
             wiki.get_pages(namespace, user),
             user
@@ -467,7 +467,7 @@ def task_wiki_import_all(dbname, user_id):
     )
 
     # import other important namespaces
-    for namepsace in (1, 14, 15):
+    for namepsace in (1,):
         wiki.import_pages(
             wiki.get_pages(namespace, user),
             user
