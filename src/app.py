@@ -467,7 +467,7 @@ def task_wiki_import_all(dbname, user_id):
     )
 
     # import other important namespaces
-    for namepsace in (1,):
+    for namespace in (1,):
         wiki.import_pages(
             wiki.get_pages(namespace, user),
             user
