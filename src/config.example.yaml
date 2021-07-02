@@ -8,4 +8,5 @@ CONSUMER_SECRET: 860adffb679dfe4041e265e41937bb9e3006eb91
 OAUTH_MWURI: https://meta.wikimedia.org/w
 INCUBATOR_MWURI: https://incubator.wikimedia.org/w
 TMP_DIR: ../data
-REDIS_URI: redis://localhost:6379
+CELERY_RESULT_BACKEND: redis://localhost:6379
+CELERY_BROKER_URL: redis://localhost:6379
